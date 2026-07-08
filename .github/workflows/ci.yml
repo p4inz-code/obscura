@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install workspace dependencies
+        run: npm install
+
+      - name: Cache Luau native build
+        id: luau-cache
+        uses: actions/cache@v4
+        with:
+          path: luau
+          key: luau-native-0.701-${{ hashFiles('packages/core/**/ObscuraSerializer.cpp') }}
+
+      - name: Clone Luau (tag 0.701)
+        if: steps.luau-cache.outputs.cache-hit != 'true'
+        run: git clone --depth 1 --branch 0.701 https://github.com/luau-lang/luau.git
+
+      - name: Place ObscuraSerializer.cpp
+        run: cp packages/core/native-src/ObscuraSerializer.cpp luau/CLI/src/ObscuraSerializer.cpp
+
+      - name: Build Luau.Ast / Luau.Common / Luau.Repl.CLI
+        if: steps.luau-cache.outputs.cache-hit != 'true'
+        run: |
+          cd luau
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DLUAU_BUILD_TESTS=OFF
+          make Luau.Ast Luau.Common Luau.Repl.CLI -j"$(nproc)"
+
+      - name: Compile obscura_native test binary
+        run: |
+          cd luau
+          g++ -O2 -std=c++17 -DOBSCURA_NATIVE_TEST \
+              -I Ast/include -I Common/include \
+              CLI/src/ObscuraSerializer.cpp build/libLuau.Ast.a build/libLuau.Common.a \
+              -o build/obscura_native
+
+      - name: Build @obscura/core
+        run: npm run build --workspace=packages/core
+
+      - name: Build @obscura/cli
+        run: npm run build --workspace=packages/cli
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Typecheck
+        run: |
+          npm exec -w packages/core -- tsc --noEmit
+          npm exec -w packages/cli -- tsc --noEmit
+
+      - name: Test
+        env:
+          OBSCURA_NATIVE_BIN: ${{ github.workspace }}/luau/build/obscura_native
+          LUAU_BIN: ${{ github.workspace }}/luau/build/luau
+        run: npm test

@@ -1,0 +1,24 @@
+{
+  "name": "obscura",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/core",
+    "packages/cli"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "eslint packages/*/src packages/*/tests",
+    "lint:fix": "eslint packages/*/src packages/*/tests --fix",
+    "format": "prettier --write \"packages/*/{src,tests}/**/*.ts\"",
+    "format:check": "prettier --check \"packages/*/{src,tests}/**/*.ts\""
+  },
+  "devDependencies": {
+    "eslint": "^10.6.0",
+    "@eslint/js": "^10.0.1",
+    "typescript-eslint": "^8.62.1",
+    "prettier": "^3.9.4",
+    "typescript": "^5.9.3"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "@obscura/cli",
+  "version": "0.9.0",
+  "private": true,
+  "description": "Command-line interface for Obscura — a free, open-source Luau source protection toolkit.",
+  "keywords": ["luau", "roblox", "obfuscator", "obfuscation", "source-protection", "cli"],
+  "license": "MIT",
+  "author": "Grim (Atharva Patil) <https://github.com/p4inz-code>",
+  "homepage": "https://github.com/p4inz-code/obscura#readme",
+  "bugs": "https://github.com/p4inz-code/obscura/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/p4inz-code/obscura.git",
+    "directory": "packages/cli"
+  },
+  "type": "module",
+  "bin": {
+    "obscura": "./bin/obscura.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@obscura/core": "file:../core"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.1"
+  }
+}

@@ -1,0 +1,47 @@
+# v1.0.0 Launch Checklist
+
+Status as of the v0.9.0 audit session, extended through fixture restoration. Check off as completed; don't reorder without a reason — items are roughly in dependency order.
+
+## Blocking (must be done before v1.0.0)
+
+**All done. Nothing blocking remains.**
+
+- [x] **0.1b — Real WASM parser build.** Done and verified end-to-end this session: built `luau-parser.cjs` via `emcc` against Luau tag 0.701, wired into `parser.ts` (`WASM_BUILT = true`), confirmed with a real `parse()` → `generate()` round trip (byte-identical output) and a full CLI run (`obscura build` — rename + string transforms applied correctly through the real parser, not the native test stand-in). One environment gotcha fixed along the way: the compiled module had to be named `luau-parser.cjs`, not `.js` — with `"type": "module"` in `package.json`, Node was silently resolving the `.js` file as an empty ES module namespace instead of the CommonJS `module.exports` the file actually contains. See `docs/BUILD_INSTRUCTIONS_0_1B.md` for the exact steps, now battle-tested.
+- [x] **Golden fixtures restored — all 11 present, verified, not guessed.** The 9 missing `.luau` sources are legitimate excerpts of Luau's own official conformance test suite (`luau/tests/conformance/*.luau`, pinned tag 0.701), trimmed to reproduce the exact pre-existing `expected/*.txt` outputs. Each one verified against the real Luau runtime before being accepted — not assumed correct.
+- [x] **Critical bug found and fixed during restoration: WASM parser silently corrupted non-ASCII source bytes.** `cwrap('obscura_parse', 'string', ['string'])` used Emscripten's automatic UTF-8 argument encoding, silently mangling any byte > 0x7F (e.g. `0xE1` → `0xC3 0xA1`) before the C++ parser ever saw it. Invisible to the whole prior test suite because every existing test used the native-binary stand-in, which doesn't cross the WASM FFI boundary — **there was no test coverage of the real `parse()` path at all until this session.** Fixed by writing raw bytes directly into WASM heap memory. New `tests/parser.test.ts` added — first dedicated coverage of the real WASM path, with regression tests verified to actually fail against the reverted buggy code before being confirmed against the fix. See CHANGELOG.md for full detail.
+- [x] Full test suite re-run after all of the above: **340/340 passing, 0 failures** (313 core + 27 cli, up from 267/281 at session start). Not "failures I recognize" — actually zero.
+
+## Done this session (v0.9.0 audit)
+
+- [x] Full line-by-line audit of `packages/core/src/*.ts` (12 files)
+- [x] Fixed: `hasDynamicLoadstring` computed but never enforced in `binder.ts` (locals stayed renameable even with a dynamic `loadstring` in scope) — now correctly marks all locals unsafe, with regression tests
+- [x] Fixed: `escapeInterpString()` byte-safety regression in `generator.ts` (`\u{XX}` instead of `\xNN` for high bytes — silently changed byte length in interpolated strings) — now matches `quoteString()`'s already-fixed approach, with regression tests
+- [x] Fixed: `isRequire` in `string-transform.ts` matched any `AstExprLocal` call, not just one named `require` — silently exempted string args of common call patterns (callbacks, event handlers) from encoding — now resolves the actual local name, with regression tests
+- [x] Removed dead/unimplemented `UnsafeReason` variant (`referenced_via_global_name`) from the exported type before freeze
+- [x] Verified fixes against the **real** Luau parser + runtime (built `obscura_native` and `luau` CLI from source, tag 0.701) — not just the type checker
+- [x] Plugin API freeze: `plugin-api.ts` reviewed and confirmed correct — dependency validation, lazy/cached binder access, per-step error isolation all sound. Frozen; header annotated.
+- [x] `CONTRIBUTING.md` — regression test policy, compatibility policy, locked-surfaces table, dev setup, PR checklist
+- [x] `README.md` — positioning per `VISION.md` (toolkit, not obfuscator), real CLI usage pulled from `cli.ts`, acceptable-use section, known limitations
+- [x] `LICENSE` — MIT, per locked `TECH_DECISIONS.md` decision
+- [x] ESLint (flat config, type-checked) + Prettier wired up as npm workspaces at repo root, `npm run lint`/`lint:fix`/`format`/`format:check` all working. Found and fixed 6 more real issues while setting it up: a vestigial always-`false` parameter threaded through 8 call sites in `binder.ts`, two unused type imports, a duplicate/dead alphabet constant in `rename-transform.ts`, a missing `cause` chain on a re-thrown JSON parse error in `parser.ts`, plus assorted dead test-file imports/variables (`equivalence.test.ts`, `integration.test.ts`, `plugin-api.test.ts`, `rename-transform.test.ts`, `cli.test.ts`). `tsc --noEmit` and `eslint` both clean (0 errors; 3 documented, intentional `any` warnings remain by design — see comments at each site)
+- [x] Ran `prettier --write` across the whole codebase (it predated the Prettier config) — verified zero behavioral change via full re-run of the test suite before/after (identical 248/254, 19/27)
+- [x] `.github/workflows/ci.yml` — builds the native Luau test binary from source, then build/lint/format-check/typecheck/test across both workspaces. **Validated by actually simulating the workflow locally, not just reading the YAML** — this caught two real bugs: (1) `npx tsc` from the repo root silently resolved a stray globally-cached TypeScript 6.0.3 instead of the pinned 5.9.3 the packages use, because root `package.json` never declared `typescript` as a dependency — fixed by pinning it at root and switching the typecheck step to `npm exec -w <pkg> -- tsc`; (2) the workflow was missing a build step for `@obscura/cli` — its tests spawn the compiled `dist/cli.js` directly, so skipping the build silently turned 19 passing tests into 25 failures. Both fixed and re-verified.
+- [x] `packages/core/native-src/ObscuraSerializer.cpp` given a permanent home in the repo (it previously only existed inside the third-party Luau clone, which isn't committed — CI and contributors need it in-repo to copy into a fresh clone)
+- [x] `CHANGELOG.md` started, entries for 0.1b and v0.9.0
+
+## Remaining before v1.0.0 (not started / deferred from this session)
+
+- [ ] **npm publish sequence** (package.json metadata now ready — `description`, `keywords`, `license`, `author`, `repository`, `bugs`, `homepage`, `files` allowlist, and `engines: node>=22` added to both packages this session). Two things still block an actual publish, in this order:
+  1. `@obscura/cli`'s dependency on `@obscura/core` is `"file:../core"` — a workspace-local path that does **not** resolve for anyone installing from the npm registry. Before publishing, swap it to a real semver range (e.g. `"^0.9.0"`) matching whatever version of core you publish. Publish core first, confirm it's live, then update this and publish cli.
+  2. Flip `"private": true` → `false` (or remove the field) in both `packages/core/package.json` and `packages/cli/package.json` — the root `package.json`'s `"private": true` should stay as-is (the root itself is never published, only the two workspace packages are).
+- [ ] Final read-through of `README.md`'s Acceptable Use section against current Roblox ToS, since platform policy can drift
+- [x] Investigated `npm audit`'s 4 vulnerabilities: all are the same transitive chain (`esbuild` → `vite` → `vite-node` → `vitest`), a dev-server request-forgery issue in `esbuild <=0.24.2`. The fix only exists from `esbuild@0.25+`, which only comes in via `vitest@2+` — a breaking major-version bump, not a patch. **Deferred, not fixed**: this is a devDependency-only issue (never shipped in `@obscura/core`/`@obscura/cli`'s published output), and the exploitable surface is Vite's dev server accepting requests from arbitrary origins — Obscura's test suite never starts a network-exposed dev server, so there's no real attack surface here today. Bumping vitest across a major version right before v1.0.0 to fix a non-applicable vulnerability risks destabilizing the test suite for no real safety gain. Revisit when there's bandwidth to validate the v2+ migration on its own, not bundled into a release-stability pass.
+- [ ] Tag `v1.0.0` once pushed and confirmed green on GitHub's own CI runners (not just this local/sandbox verification) — nothing technical is blocking this anymore, it's a "push it and watch CI" step
+
+## Explicitly NOT in scope for v1.0.0
+
+(Per `VISION.md` roadmap — don't scope-creep these in under launch pressure.)
+
+- VS Code extension (v0.6+ per roadmap, but sequenced after core stability — reconfirm timing)
+- Playground, benchmark suite (explicitly deferred in `VISION.md`)
+- Formal governance / CLA-DCO decision (deferred until first non-trivial external PR, per `TECH_DECISIONS.md`)

@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+package-lock.json.bak
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Luau source clone (fetched fresh by CI / CONTRIBUTING.md steps, not committed)
+/luau/
+
+# Test/coverage artifacts
+coverage/
+.vitest-cache/
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Env files (never commit secrets)
+.env
+.env.local

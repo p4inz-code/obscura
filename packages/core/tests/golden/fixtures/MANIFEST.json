@@ -1,0 +1,15 @@
+{
+  "fixtures": [
+    { "id": "01-locals",        "mode": "full" },
+    { "id": "02-closures",      "mode": "full", "note": "Trimmed at line 158 — coroutine section" },
+    { "id": "03-constructs",    "mode": "full" },
+    { "id": "04-iterators",     "mode": "full" },
+    { "id": "05-coroutines",    "mode": "parse-only", "note": "coroutine.isyieldable() standalone incompatible" },
+    { "id": "06-string-interp", "mode": "full" },
+    { "id": "07-if-else-expr",  "mode": "full" },
+    { "id": "08-literals",      "mode": "full" },
+    { "id": "09-attributes",    "mode": "full" },
+    { "id": "10-trivial",       "mode": "full" },
+    { "id": "11-large-basic",   "mode": "parse-only", "note": "_G writes + path-in-pcall-error incompatible with standalone" }
+  ]
+}

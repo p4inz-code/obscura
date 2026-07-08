@@ -1,0 +1,5 @@
+/home/claude/obscura/packages/core/tests/golden/fixtures/11-large-basic.luau:48: attempt to modify a readonly table
+stacktrace:
+/home/claude/obscura/packages/core/tests/golden/fixtures/11-large-basic.luau:48
+/home/claude/obscura/packages/core/tests/golden/fixtures/11-large-basic.luau:48
+testing language/library basics

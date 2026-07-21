@@ -1,6 +1,6 @@
 {
   "name": "@obscura/cli",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Command-line interface for Obscura — a free, open-source Luau source protection toolkit.",
   "keywords": ["luau", "roblox", "obfuscator", "obfuscation", "source-protection", "cli"],

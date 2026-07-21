@@ -16,7 +16,7 @@
 | v0.7.0 | Milestone 6 | Plugin System |
 | v0.8.0 | Milestone 7 | CLI |
 | v0.9.0 | Milestone 8 | Release Candidate — audit pass, WASM parser (0.1b) complete, plugin API frozen, CI/lint/docs |
-| v1.0.0 | Stable release | Production-ready Obscura — pending golden fixture restoration |
+| v1.0.0 | Stable release | Production-ready Obscura — 340/340 tests, all fixtures restored, pending push + CI confirmation |
 
 ## Schema Version History
 

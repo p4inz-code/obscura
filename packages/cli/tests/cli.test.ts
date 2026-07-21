@@ -55,10 +55,17 @@ function buildAndRun(fixture: string, cliArgs: string[] = []): string {
 // ---------------------------------------------------------------------------
 
 describe('CLI basics', () => {
-  it('--version outputs version string', () => {
+  it('--version outputs the actual package.json version, not a stale hardcoded string', () => {
+    // Regression: VERSION was a hardcoded '0.0.1-dev' constant, disconnected from
+    // package.json entirely — it would have shipped v1.0.0 reporting itself as
+    // v0.0.1-dev. A loose /obscura v/ pattern match doesn't catch that; only
+    // checking the actual value does.
+    const pkg = JSON.parse(readFileSync(resolve(__dir, '../package.json'), 'utf-8')) as {
+      version: string;
+    };
     const r = runCli(['--version']);
     expect(r.exit).toBe(0);
-    expect(r.stdout).toMatch(/obscura v/);
+    expect(r.stdout.trim()).toBe(`obscura v${pkg.version}`);
   });
 
   it('--help outputs usage', () => {

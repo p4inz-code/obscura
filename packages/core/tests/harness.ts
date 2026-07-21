@@ -4,7 +4,7 @@
  */
 
 import { execFileSync, ExecFileSyncOptions } from 'node:child_process';
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
@@ -102,8 +102,15 @@ export function runFile(filePath: string, timeoutMs = 5000): RunResult {
 
 /** Write source to a temp file, run it, clean up. Returns result. */
 export function runSource(source: string, label: string, timeoutMs = 5000): RunResult {
-  const dir = join(tmpdir(), `obscura-test-${process.pid}`);
-  mkdirSync(dir, { recursive: true });
+  // mkdtempSync, NOT a process.pid-based shared directory: process.pid is shared
+  // across every worker_thread in the same Node process, and Vitest's default pool
+  // runs test files concurrently via worker_threads. Multiple test FILES calling
+  // runSource with the same fixture id as `label` (very common — every transform's
+  // corpus-equivalence test loop uses fixture.id as the label) raced on the exact
+  // same path, and one call's `finally { rmSync(dir) }` could delete a directory
+  // another concurrent call still needed mid-flight. mkdtempSync atomically creates
+  // a unique directory per call — no shared state between concurrent invocations.
+  const dir = mkdtempSync(join(tmpdir(), 'obscura-test-'));
   const file = join(dir, `${label.replace(/[^a-z0-9]/gi, '_')}.luau`);
   writeFileSync(file, source, 'utf-8');
   try {

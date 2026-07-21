@@ -2,7 +2,7 @@
  * Obscura CLI — packages/cli/src/cli.ts
  */
 
-import { readFileSync, writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { resolve, basename, extname, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
@@ -20,7 +20,11 @@ import {
   type NumberEncoding,
 } from '@obscura/core';
 
-const VERSION = '0.0.1-dev';
+const __dir = dirname(fileURLToPath(import.meta.url));
+const pkg = JSON.parse(readFileSync(resolve(__dir, '../package.json'), 'utf-8')) as {
+  version: string;
+};
+const VERSION = pkg.version;
 
 interface CliArgs {
   command: 'build' | 'help' | 'version';
@@ -123,8 +127,9 @@ function parseSource(source: string, sourceFile: string): ObscuraParseResult {
   const nativeBin =
     process.env['OBSCURA_NATIVE_BIN'] ?? resolve(__dir, '../../../luau/build/obscura_native');
 
-  const dir = resolve(tmpdir(), `obscura-cli-${process.pid}`);
-  mkdirSync(dir, { recursive: true });
+  // mkdtempSync, not a process.pid-based path — see the identical fix (and full
+  // rationale) in packages/core/src/parser-native.ts and tests/harness.ts.
+  const dir = mkdtempSync(resolve(tmpdir(), 'obscura-cli-'));
   const tmp = resolve(dir, 'input.luau');
   try {
     writeFileSync(tmp, source, 'latin1');

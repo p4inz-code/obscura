@@ -1,6 +1,6 @@
 {
   "name": "@obscura/core",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "private": true,
   "description": "Core parser, binder, transform pipeline, and generator for Obscura — a free, open-source Luau source protection toolkit.",
   "keywords": ["luau", "roblox", "obfuscator", "obfuscation", "source-protection", "ast", "minifier"],

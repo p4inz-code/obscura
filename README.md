@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
-[![CI](https://img.shields.io/badge/CI-GitHub_Actions-blue.svg)](.github/workflows/ci.yml)
+[![CI](https://github.com/p4inz-code/obscura/actions/workflows/ci.yml/badge.svg)](https://github.com/p4inz-code/obscura/actions/workflows/ci.yml)
 
 **A professional, open-source Luau source protection toolkit. Free forever.**
 
@@ -29,10 +29,9 @@ Obscura takes your Luau source and produces behaviorally identical, harder-to-re
 
 ## Status
 
-🚧 **Pre-release**, but the core pipeline is real and working end-to-end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. Verified via a direct `parse()` → `generate()` round trip and a full CLI run.
+✅ **v1.0.0 — stable.** The full pipeline is real and working end-to-end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. **340/340 tests passing, 0 failures**, including a full golden-fixture corpus verified against the real Luau runtime and a CI run on real multi-core infrastructure (not just local testing).
 
-Done: transform pipeline, CLI, plugin API (frozen), WASM parser, full golden-fixture corpus (340/340 tests passing, 0 failures), CI, lint/format, docs.
-Remaining: publishing the npm packages (a deliberate later step, not a blocker — see [`docs/V1_0_0_LAUNCH_CHECKLIST.md`](docs/V1_0_0_LAUNCH_CHECKLIST.md) for the exact publish sequence). [`docs/ROADMAP.md`](docs/ROADMAP.md) has the longer-term feature plan (playground, VS Code extension, etc.) — note its milestone sequence predates how development actually went, see the note at the top of that file.
+Not yet done: publishing to npm (a deliberate later step, not a blocker — see [`docs/V1_0_0_LAUNCH_CHECKLIST.md`](docs/V1_0_0_LAUNCH_CHECKLIST.md) for the exact publish sequence). Until then, install from source — see [Quick Start](#quick-start). [`docs/ROADMAP.md`](docs/ROADMAP.md) has the longer-term feature plan (playground, VS Code extension, etc.) — note its milestone sequence predates how development actually went, see the note at the top of that file.
 
 ---
 

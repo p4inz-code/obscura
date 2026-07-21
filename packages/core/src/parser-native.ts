@@ -7,7 +7,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import type { ObscuraParseResult } from './ast.js';
 
@@ -18,9 +18,18 @@ const NATIVE_BIN =
   process.env['OBSCURA_NATIVE_BIN'] ?? resolve(__dir, '../../../luau/build/obscura_native');
 
 export function parseNative(source: string): ObscuraParseResult {
-  // Write source to temp file — avoids shell escaping issues with source content
-  const dir = resolve(tmpdir(), `obscura-parse-${process.pid}`);
-  mkdirSync(dir, { recursive: true });
+  // Write source to a temp file — avoids shell escaping issues with source content.
+  //
+  // mkdtempSync, NOT a process.pid-based path: process.pid is shared across every
+  // worker_thread in the same Node process, and Vitest's default pool runs test
+  // files concurrently via worker_threads. A fixed pid-based directory meant every
+  // concurrent call raced on the exact same file — one test's `finally { rmSync }`
+  // could delete the directory out from under another test mid-flight ("Cannot
+  // open ... input.luau"), or two writes could race so a test silently read a
+  // completely different test's source content. mkdtempSync atomically creates a
+  // unique directory per call (OS-level guarantee, no time-of-check/time-of-use
+  // window) — every invocation gets its own directory, full stop.
+  const dir = mkdtempSync(resolve(tmpdir(), 'obscura-parse-'));
   const srcFile = resolve(dir, 'input.luau');
 
   try {

@@ -1,3 +1,8 @@
+
+<p align="center">
+  <img src="https://github.com/p4inz-code/obscura/blob/main/assets/banner.png?raw=true" alt="Obscura Banner" width="100%">
+</p>
+
 # Obscura
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

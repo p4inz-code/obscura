@@ -70,7 +70,7 @@ What's required:
 
 ## Task 5: AST accessibility
 
-**Finding: Strong: and unexpectedly, there's a second, more directly relevant data point beyond raw WASM.**
+**Finding: Strong, and unexpectedly, there's a second, more directly relevant data point beyond raw WASM.**
 
 Two relevant access paths surfaced during this spike:
 

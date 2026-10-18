@@ -1,5 +1,5 @@
 # 0.1b: Local Build Instructions
-# Official luau WASM + custom AST serializer
+# Official Luau WASM + custom AST serializer
 
 ## Critical Finding (from probe)
 

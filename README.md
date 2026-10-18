@@ -9,13 +9,11 @@
 [![Node](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg)](https://nodejs.org)
 [![CI](https://github.com/p4inz-code/obscura/actions/workflows/ci.yml/badge.svg)](https://github.com/p4inz-code/obscura/actions/workflows/ci.yml)
 
-**A professional, open-source Luau source protection toolkit. Free forever.**
-
-No subscriptions. No premium tier. No feature paywalls. No closed-source modules.
+A professional, open-source Luau source protection toolkit, free forever. There are no subscriptions, no premium tier, no feature paywalls and no closed-source modules.
 
 Obscura takes your Luau source and produces behaviorally identical, harder-to-read output: variable renaming, string encoding, constant obfuscation, and dead-code insertion, all verified against the real Luau parser and runtime so your game never breaks.
 
-> Obscura is a **source protection toolkit**, not a "Roblox obfuscator." That distinction matters: Obscura will not market or document itself as a way to evade Roblox's moderation or anti-cheat systems, and will not add features whose primary purpose is defeating platform detection. See [Acceptable Use](#acceptable-use) below.
+> Obscura is a source protection toolkit, not a "Roblox obfuscator". The distinction matters: Obscura will not market or document itself as a way to evade Roblox's moderation or anti-cheat systems, and will not add features whose primary purpose is defeating platform detection. See [Acceptable Use](#acceptable-use) below.
 
 ---
 
@@ -34,7 +32,7 @@ Obscura takes your Luau source and produces behaviorally identical, harder-to-re
 
 ## Status
 
-**v1.0.0: stable.** The full pipeline is real and working end-to-end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. 340/340 tests passing, 0 failures, including a full golden-fixture corpus verified against the real Luau runtime and a CI run on real multi-core infrastructure (not just local testing).
+**v1.0.0: stable.** The full pipeline works end to end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. 340/340 tests passing, 0 failures, including a full golden-fixture corpus verified against the real Luau runtime and a CI run on real multi-core infrastructure (not just local testing).
 
 Not yet done: publishing to npm (a deliberate later step, not a blocker, see [`docs/V1_0_0_LAUNCH_CHECKLIST.md`](docs/V1_0_0_LAUNCH_CHECKLIST.md) for the exact publish sequence). Until then, install from source, see [Quick Start](#quick-start). [`docs/ROADMAP.md`](docs/ROADMAP.md) has the longer-term feature plan (playground, VS Code extension, etc.), note its milestone sequence predates how development actually went, see the note at the top of that file.
 

@@ -1,6 +1,6 @@
-# AST_CONTRACT.md — Obscura
+# AST_CONTRACT.md: Obscura
 
-**Status:** Milestone 0 — 0.2 AST Serialization Contract (COMPLETE)
+**Status:** Milestone 0: 0.2 AST Serialization Contract (COMPLETE)
 **Luau source pinned:** tag `0.701`
 **Scope:** Serialization format, identity strategy, schema, snapshot format, open risks.
 
@@ -8,54 +8,54 @@
 
 ## Findings
 
-### AstLocal Identity — Resolved
+### AstLocal identity: resolved
 
 `ParseResult` does **not** expose a flat list of `AstLocal` allocations. The only output is `root: AstStatBlock*`. All `AstLocal*` values exist in the arena allocator, reachable only by walking the tree.
 
-**C++ pointer identity does not survive a WASM boundary** — it is meaningless after serialization. There is no stable id in the official representation. Obscura must **assign its own stable ids during serialization-side tree walk**.
+**C++ pointer identity does not survive a WASM boundary**. It is meaningless after serialization. There is no stable id in the official representation. Obscura must assign its own stable ids during serialization-side tree walk.
 
 **Strategy:** pre-order depth-first tree walk on the WASM/C++ side; assign a monotonically incrementing integer id to each `AstLocal*` encountered for the first time (using a pointer→id map to detect re-visits, since the same `AstLocal*` is referenced from both its declaration site and all usage sites). The resulting `locals` flat table in the serialized output uses these assigned integer ids. This is deterministic, stable, and reproducible for any given source input.
 
-**Key consequence:** the walk must be done C++-side (or in the WASM glue layer), not in the TS deserializer — because raw pointer values aren't transmitted, so by the time data reaches TS, pointer identity is already gone. The WASM serializer is responsible for id assignment.
+**Key consequence:** the walk must be done C++-side (or in the WASM glue layer), not in the TS deserializer. Because raw pointer values aren't transmitted, so by the time data reaches TS, pointer identity is already gone. The WASM serializer is responsible for id assignment.
 
-### CST Layer — Skipped
+### CST layer: skipped
 
-35 `CstNode` subclasses carry whitespace/punctuation positions and original quote styles. Irrelevant to Obscura's transform use case. `CstNodeMap` in `ParseResult` is not serialized — ignored entirely.
+35 `CstNode` subclasses carry whitespace/punctuation positions and original quote styles. Irrelevant to Obscura's transform use case. `CstNodeMap` in `ParseResult` is not serialized, ignored entirely.
 
 ### AstAttr
 
-Carries `Type enum {Checked, Native, Deprecated, Unknown}` and optional deprecation metadata. Present on `AstExprFunction` via `attributes: AstArray<AstAttr*>`. Relevant only as a passthrough field — transforms should preserve attributes unchanged. Not a Binder input.
+Carries `Type enum {Checked, Native, Deprecated, Unknown}` and optional deprecation metadata. Present on `AstExprFunction` via `attributes: AstArray<AstAttr*>`. Relevant only as a passthrough field, transforms should preserve attributes unchanged. Not a Binder input.
 
 ### AstExprInterpString
 
-String interpolation (`` `foo{bar}baz` ``) serializes as parallel arrays: `strings` (always `expressions.length + 1` string segments) and `expressions` (the interpolated values). Interleaved on the TS side by index. This is the one "non-obvious" structural pattern in the AST — worth calling out explicitly in tests.
+String interpolation (`` `foo{bar}baz` ``) serializes as parallel arrays: `strings` (always `expressions.length + 1` string segments) and `expressions` (the interpolated values). Interleaved on the TS side by index. This is the one "non-obvious" structural pattern in the AST, worth calling out explicitly in tests.
 
 ### AstStatFunction vs AstStatLocalFunction
 
 - `AstStatLocalFunction.name` is `AstLocal*` (registered binding, renameable)
-- `AstStatFunction.name` is `AstExpr*` (could be `AstExprGlobal`, `AstExprIndexName`, etc. — not a simple binding, not directly renameable)
+- `AstStatFunction.name` is `AstExpr*` (could be `AstExprGlobal`, `AstExprIndexName`, etc. not a simple binding, not directly renameable)
 
-This distinction is already in the source at the type level. Critical for `RenameTransform` scoping — `AstStatFunction` names are structurally outside the safe-rename path.
+This distinction is already in the source at the type level. Critical for `RenameTransform` scoping, `AstStatFunction` names are structurally outside the safe-rename path.
 
-### Error Nodes
+### Error nodes
 
-Parser operates in **error-recovery mode** — it does not throw on parse failure. Errors are collected into `ParseResult.errors: ParseError[]`. `AstExprError` / `AstStatError` are emitted as placeholder nodes at error sites, carrying a `messageIndex` (indexes into `ParseResult.errors`) and any successfully-parsed sub-expressions. Obscura must: (1) check `ParseResult.errors` before accepting output as valid, (2) treat any `AstExprError`/`AstStatError` nodes in the output as fatal for transform purposes (fail-loud, not transform-and-emit).
+Parser operates in **error-recovery mode**. It does not throw on parse failure. Errors are collected into `ParseResult.errors: ParseError[]`. `AstExprError` / `AstStatError` are emitted as placeholder nodes at error sites, carrying a `messageIndex` (indexes into `ParseResult.errors`) and any successfully-parsed sub-expressions. Obscura must: (1) check `ParseResult.errors` before accepting output as valid, (2) treat any `AstExprError`/`AstStatError` nodes in the output as fatal for transform purposes (fail-loud, not transform-and-emit).
 
 ---
 
 ## Decisions
 
-1. **AstLocal stable ids are assigned by the WASM serializer during a pre-order DFS walk**, using a C++-side pointer→int map. Integer ids, zero-indexed per parse result.
-2. **CST layer is fully excluded** from the serialized output. No whitespace/formatting fidelity target for v0.1.0.
-3. **Comments are excluded.** `ParseResult.commentLocations` is not serialized. Code generator will not preserve comments.
-4. **Error handling contract:** serializer always emits `errors: ParseError[]`. TS consumer checks this array before any further processing. Any non-empty `errors` array is a hard stop — no transform runs on a partially-errored parse.
-5. **`AstExprIndexExpr` with a constant-string `index`** is serialized normally but **flagged** with `dynamicStringKey: true` on the serialized node. This flag is assigned C++-side (or TS-side cheaply by inspecting the `index` node's `type` field) — it's a derived property for the Binder's safe-rename exclusion logic, not a new node type.
-6. **Globals are serialized as `AstExprGlobal { name: string }` — no id, no resolution.** This is correct-by-design (Luau semantics). The Binder's exclude-from-rename policy for globals is enforced at the schema level (no `localId` field, not just "check the name against an exclusion list").
-7. **Normalized locals table** (flat, indexed by id) is the final design. Every `AstLocal` appears exactly once in `result.locals`, keyed by its assigned id. All node references to locals use `localId: number`.
+1. AstLocal stable ids are assigned by the WASM serializer during a pre-order DFS walk, using a C++-side pointer→int map. Integer ids, zero-indexed per parse result.
+2. CST layer is fully excluded from the serialized output. No whitespace/formatting fidelity target for v0.1.0.
+3. Comments are excluded. `ParseResult.commentLocations` is not serialized. Code generator will not preserve comments.
+4. Error handling contract: serializer always emits `errors: ParseError[]`. TS consumer checks this array before any further processing. Any non-empty `errors` array is a hard stop. No transform runs on a partially-errored parse.
+5. `AstExprIndexExpr` with a constant-string `index` is serialized normally but flagged with `dynamicStringKey: true` on the serialized node. This flag is assigned C++-side (or TS-side cheaply by inspecting the `index` node's `type` field), it's a derived property for the Binder's safe-rename exclusion logic, not a new node type.
+6. Globals are serialized as `AstExprGlobal { name: string }`. No id, no resolution. This is correct-by-design (Luau semantics). The Binder's exclude-from-rename policy for globals is enforced at the schema level (no `localId` field, not just "check the name against an exclusion list").
+7. Normalized locals table (flat, indexed by id) is the final design. Every `AstLocal` appears exactly once in `result.locals`, keyed by its assigned id. All node references to locals use `localId: number`.
 
 ---
 
-## Final Schema
+## Final schema
 
 ### Wire Format: JSON (v0.1.0)
 
@@ -113,7 +113,7 @@ interface ObscuraLocal {
 }
 ```
 
-### Node Base
+### Node base
 
 ```typescript
 interface ObscuraNode {
@@ -122,7 +122,7 @@ interface ObscuraNode {
 }
 ```
 
-### Expression Nodes
+### Expression nodes
 
 ```typescript
 // Leaf literals
@@ -218,7 +218,7 @@ interface AstExprError extends ObscuraNode {
 }
 ```
 
-### Statement Nodes
+### Statement nodes
 
 ```typescript
 interface AstStatBlock extends ObscuraNode {
@@ -298,7 +298,7 @@ interface AstStatError extends ObscuraNode {
 }
 ```
 
-### Auxiliary Types
+### Auxiliary types
 
 ```typescript
 interface ObscuraAttr {
@@ -321,47 +321,47 @@ type ObscuraStat = AstStatBlock | AstStatIf | AstStatWhile | AstStatRepeat |
 
 ---
 
-## Snapshot Format
+## Snapshot format
 
 Golden AST snapshots are stored as pretty-printed JSON in `tests/golden-ast/<fixture-name>.snap.json`. Format is the `ObscuraParseResult` wire format, with:
-- `source` field **omitted** from snapshots (it's the input, not the output being tested — including it doubles file size and creates diff noise on reformats)
+- `source` field omitted from snapshots (it's the input, not the output being tested, including it doubles file size and creates diff noise on reformats)
 - `locals` table included in full
 - `errors` array expected to be `[]` in all passing-fixture snapshots (non-empty errors = invalid fixture)
 
-Vitest snapshot testing compares the full `locals` + `root` object. Any structural change to either (field added/removed/renamed, location drift, node type change) fails the snapshot and must be a deliberate, reviewed update — this is the AST-stability gate per ARCHITECTURE.md Section 2a.
+Vitest snapshot testing compares the full `locals` + `root` object. Any structural change to either (field added/removed/renamed, location drift, node type change) fails the snapshot and must be a deliberate, reviewed update. This is the AST-stability gate per ARCHITECTURE.md Section 2a.
 
 ---
 
 ## Type-system Nodes: v0.1.0 Treatment
 
 `AstType*` (15 node classes: `AstTypeReference`, `AstTypeTable`, `AstTypeFunction`, `AstTypeTypeof`, `AstTypeOptional`, `AstTypeUnion`, `AstTypeIntersection`, `AstTypeError`, `AstTypeSingletonBool`, `AstTypeSingletonString`, `AstTypeGroup`, `AstTypePack*`) and their parent annotation fields are:
-- **Preserved as opaque passthrough nodes** in the AST (serialized with `type` discriminant and `location` only — no child fields in v0.1.0)
-- **Not walked by the Binder or any v0.1.0 transform**
-- **Re-emitted verbatim by the code generator** (requires source span preservation — emit the original source slice for the annotation range, not a re-generated type string)
+- Preserved as opaque passthrough nodes in the AST (serialized with `type` discriminant and `location` only. No child fields in v0.1.0)
+- Not walked by the Binder or any v0.1.0 transform
+- Re-emitted verbatim by the code generator (requires source span preservation, emit the original source slice for the annotation range, not a re-generated type string)
 
 This is the correct call for v0.1.0: type annotations are Luau-specific, complex, and have no bearing on rename safety or correctness for the `RenameTransform`. Full serialization of the `AstType*` subtree is deferred to when a transform actually needs to reason about types.
 
 ---
 
-## Open Risks
+## Open risks
 
 | Risk | Severity | Status |
 |---|---|---|
-| WASM serializer must implement pre-order DFS + pointer→id map C++-side — this is new bespoke code, not free | Medium | Accepted; bounded scope, clear implementation path |
+| WASM serializer must implement pre-order DFS + pointer→id map C++-side, this is new bespoke code, not free | Medium | Accepted; bounded scope, clear implementation path |
 | `AstExprBinary.Op` full enum not extracted — 14 values confirmed by count, spot-checked (Add, Sub, Mul, Div) | Low | Needs one more `grep` in 0.4 WASM work; non-blocking for schema finalization |
-| Type-annotation source-span passthrough requires code generator to track original source byte ranges — not yet designed | Medium | Deferred to code generator (milestone 0.5); schema is schema-complete now |
-| `AstExprInstantiate` (explicit type instantiation, `f<T>()`) — fields partially inspected, generic args omitted from schema as opaque | Low | Passthrough-only in v0.1.0; full field extraction deferred |
+| Type-annotation source-span passthrough requires code generator to track original source byte ranges, not yet designed | Medium | Deferred to code generator (milestone 0.5); schema is schema-complete now |
+| `AstExprInstantiate` (explicit type instantiation, `f<T>()`), fields partially inspected, generic args omitted from schema as opaque | Low | Passthrough-only in v0.1.0; full field extraction deferred |
 
 ---
 
-## Go / No-Go for 0.2
+## Go / no-go for 0.2
 
 **GO. 0.2 is complete.**
 
 - Identity strategy: resolved. Stable ids assigned by WASM serializer via DFS pointer-map.
 - Schema: complete for all Binder-critical nodes, all expression/statement nodes, and all v0.1.0-relevant paths.
-- Type-system nodes: deliberately deferred with a defined passthrough strategy — not a gap.
+- Type-system nodes: deliberately deferred with a defined passthrough strategy. Not a gap.
 - Snapshot format: defined.
 - Wire format: JSON, `schemaVersion: 1`.
 
-**Next milestone: 0.3 (Compatibility Layer decision) — recommended decision is SKIP per original plan.** The schema above is clean enough to consume directly in TS without a remapping layer. Proceed to 0.4 (Node integration) immediately after 0.3 sign-off.
+**Next milestone: 0.3 (Compatibility Layer decision), recommended decision is SKIP per original plan.** The schema above is clean enough to consume directly in TS without a remapping layer. Proceed to 0.4 (Node integration) immediately after 0.3 sign-off.

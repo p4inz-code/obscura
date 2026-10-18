@@ -13,7 +13,7 @@
 
 No subscriptions. No premium tier. No feature paywalls. No closed-source modules.
 
-Obscura takes your Luau source and produces behaviorally identical, harder-to-read output — variable renaming, string encoding, constant obfuscation, and dead-code insertion, all verified against the real Luau parser and runtime so your game never breaks.
+Obscura takes your Luau source and produces behaviorally identical, harder-to-read output: variable renaming, string encoding, constant obfuscation, and dead-code insertion, all verified against the real Luau parser and runtime so your game never breaks.
 
 > Obscura is a **source protection toolkit**, not a "Roblox obfuscator." That distinction matters: Obscura will not market or document itself as a way to evade Roblox's moderation or anti-cheat systems, and will not add features whose primary purpose is defeating platform detection. See [Acceptable Use](#acceptable-use) below.
 
@@ -34,13 +34,13 @@ Obscura takes your Luau source and produces behaviorally identical, harder-to-re
 
 ## Status
 
-✅ **v1.0.0 — stable.** The full pipeline is real and working end-to-end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. **340/340 tests passing, 0 failures**, including a full golden-fixture corpus verified against the real Luau runtime and a CI run on real multi-core infrastructure (not just local testing).
+**v1.0.0: stable.** The full pipeline is real and working end-to-end: the actual official Luau parser (compiled to WASM, tag 0.701) parses your source, and the full transform pipeline + generator produce valid, behaviorally-verified output. 340/340 tests passing, 0 failures, including a full golden-fixture corpus verified against the real Luau runtime and a CI run on real multi-core infrastructure (not just local testing).
 
-Not yet done: publishing to npm (a deliberate later step, not a blocker — see [`docs/V1_0_0_LAUNCH_CHECKLIST.md`](docs/V1_0_0_LAUNCH_CHECKLIST.md) for the exact publish sequence). Until then, install from source — see [Quick Start](#quick-start). [`docs/ROADMAP.md`](docs/ROADMAP.md) has the longer-term feature plan (playground, VS Code extension, etc.) — note its milestone sequence predates how development actually went, see the note at the top of that file.
+Not yet done: publishing to npm (a deliberate later step, not a blocker, see [`docs/V1_0_0_LAUNCH_CHECKLIST.md`](docs/V1_0_0_LAUNCH_CHECKLIST.md) for the exact publish sequence). Until then, install from source, see [Quick Start](#quick-start). [`docs/ROADMAP.md`](docs/ROADMAP.md) has the longer-term feature plan (playground, VS Code extension, etc.), note its milestone sequence predates how development actually went, see the note at the top of that file.
 
 ---
 
-## Quick Start
+## Quick start
 
 ```bash
 # Clone and install
@@ -55,7 +55,7 @@ npm run build
 node packages/cli/dist/cli.js build path/to/your-script.luau --dry-run
 ```
 
-That last command prints the protected output to your terminal without writing a file — drop `--dry-run` and add `-o output.luau` once you're happy with it. See [Usage](#usage) below for the full option list.
+That last command prints the protected output to your terminal without writing a file, drop `--dry-run` and add `-o output.luau` once you're happy with it. See [Usage](#usage) below for the full option list.
 
 Once Obscura is published to npm (see [Status](#status)), this gets simpler:
 
@@ -66,7 +66,7 @@ obscura build path/to/your-script.luau -o output.luau
 
 ---
 
-## What It Does
+## What it does
 
 ```
 Source Code
@@ -132,17 +132,17 @@ const { result } = runPipeline(parsed, BUILTIN_TRANSFORMS.map(transform => ({ tr
 const output = generate(result);
 ```
 
-Third-party transforms implement the [`Transform` interface](docs/PLUGIN_API_DESIGN.md) — see `packages/core/plugins/noop-wrap-transform.ts` for a minimal example.
+Third-party transforms implement the [`Transform` interface](docs/PLUGIN_API_DESIGN.md). See `packages/core/plugins/noop-wrap-transform.ts` for a minimal example.
 
-## Known Limitations
+## Known limitations
 
-- **Obfuscation is not encryption.** Obscura raises the cost of reading your source; it does not make extraction impossible. A determined attacker with a deobfuscator can still recover logic. Don't rely on it as your only protection for genuinely sensitive code (licensing keys, anti-cheat secrets, etc.).
-- **Type annotations are dropped.** `:: Type` assertions and generic type args are stripped from output — they're compile-time only and don't affect runtime behavior, but if you're piping output through a type checker, be aware.
-- **Supported syntax = what the golden corpus empirically covers.** New Luau syntax is added when proven by tests, not assumed to work.
+- Obfuscation is not encryption. Obscura raises the cost of reading your source; it does not make extraction impossible. A determined attacker with a deobfuscator can still recover logic. Don't rely on it as your only protection for genuinely sensitive code (licensing keys, anti-cheat secrets, etc.).
+- Type annotations are dropped. `:: Type` assertions and generic type args are stripped from output: they're compile-time only and don't affect runtime behavior, but if you're piping output through a type checker, be aware.
+- Supported syntax = what the golden corpus empirically covers. New Luau syntax is added when proven by tests, not assumed to work.
 
-## Acceptable Use
+## Acceptable use
 
-The same transforms that protect a legitimate developer's game logic can, in principle, be used to hide malicious or exploit-enabling code from review. Obscura cannot technically distinguish intent — but it will not optimize for the malicious case:
+The same transforms that protect a legitimate developer's game logic can, in principle, be used to hide malicious or exploit-enabling code from review. Obscura cannot technically distinguish intent. But it will not optimize for the malicious case:
 
 - Obscura will not be marketed or documented as a way to evade Roblox's moderation, automated script review, or anti-cheat systems.
 - Features whose primary purpose is defeating Roblox's own bytecode analysis or detection tooling (as opposed to general-purpose code protection) are out of scope.

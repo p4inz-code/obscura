@@ -1,5 +1,5 @@
-# 0.1b — Local Build Instructions
-# Official Luau WASM + Custom AST Serializer
+# 0.1b: Local Build Instructions
+# Official luau WASM + custom AST serializer
 
 ## Critical Finding (from probe)
 
@@ -46,7 +46,7 @@ node --version   # 18+
 
 ---
 
-## Step 1 — Clone Luau at pinned tag
+## Step 1: Clone Luau at pinned tag
 
 ```bash
 git clone --depth 1 --branch 0.701 https://github.com/luau-lang/luau.git
@@ -56,7 +56,7 @@ git describe --tags   # must print: 0.701
 
 ---
 
-## Step 2 — Verify native build first (sanity check)
+## Step 2: Verify native build first (sanity check)
 
 ```bash
 mkdir build-native && cd build-native
@@ -68,7 +68,7 @@ cd ..
 
 ---
 
-## Step 3 — Write custom serializer (ObscuraSerializer.cpp)
+## Step 3: Write custom serializer (ObscuraSerializer.cpp)
 
 Create `CLI/src/ObscuraSerializer.cpp` in the cloned Luau repo:
 
@@ -592,7 +592,7 @@ const char* obscura_parse(const char* source_cstr) {
 
 ---
 
-## Step 4 — Add serializer to CMakeLists (WASM build only)
+## Step 4: Add serializer to CMakeLists (WASM build only)
 
 Append to the `if(LUAU_BUILD_WEB)` block in `CMakeLists.txt`:
 
@@ -622,7 +622,7 @@ endif()
 
 ---
 
-## Step 5 — WASM build
+## Step 5: WASM build
 
 ```bash
 # In the luau repo root
@@ -639,7 +639,7 @@ ls -lh Luau.ObscuraParser   # ~1.5-3MB single-file JS+WASM bundle
 
 ---
 
-## Step 6 — Verification
+## Step 6: verification
 
 ```bash
 # Quick Node smoke test
@@ -663,7 +663,7 @@ createObscuraModule().then(m => {
 
 ---
 
-## Step 7 — Copy artifact to packages/core
+## Step 7: Copy artifact to packages/core
 
 ```bash
 cp Luau.ObscuraParser.js ../../packages/core/native/luau-parser.js
@@ -682,11 +682,11 @@ Then wire into `packages/core/src/parser.ts` (task 0.4 / index.ts stub replaceme
 
 ---
 
-## Known Risks
+## Known risks
 
 | Risk | Mitigation |
 |---|---|
 | `emsdk` bootstrap downloads from CDN not accessible in all CI environments | Pin emsdk version; cache in CI; provide pre-built artifact as fallback |
-| `result_storage` static string — not thread-safe | Acceptable for Node single-threaded WASM module; not a production concern |
-| `local->shadow` in `buildLocalsJson` — must verify shadow itself was assigned an ID before accessing `ids.at()` | Pre-order DFS collects declarations before usages; shadowed locals are always declared before their shadows in any valid Luau scope. Verify in smoke test with shadow fixture |
+| `result_storage` static string, not thread-safe | Acceptable for Node single-threaded WASM module; not a production concern |
+| `local->shadow` in `buildLocalsJson`, must verify shadow itself was assigned an ID before accessing `ids.at()` | Pre-order DFS collects declarations before usages; shadowed locals are always declared before their shadows in any valid Luau scope. Verify in smoke test with shadow fixture |
 | `AstExprInstantiate` fallback path in emitExpr has infinite recursion bug | Fix: emit opaque node `{type:"AstExprInstantiate",location:...}` without calling emitExpr on itself |
